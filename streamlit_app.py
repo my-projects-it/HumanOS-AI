@@ -5,47 +5,36 @@ import requests
 # ------------------------------
 # Page Config
 # ------------------------------
-st.set_page_config(
-    page_title="AI Planner",
-    page_icon="🤖",
-    layout="wide"
-)
-
-# ------------------------------
-# Title
-# ------------------------------
-st.title("🌟 AI Goal Planner")
-st.write("Enter your goal and get a personalized plan!")
+st.set_page_config(page_title="AI Goal Planner", page_icon="🤖", layout="wide")
+st.title("🌟 AI Goal Planner (English + Hindi)")
 
 # ------------------------------
 # Input
 # ------------------------------
-goal = st.text_input("Type your goal here:")
+goal = st.text_input("Enter your goal (English or Hindi):")
 
 # ------------------------------
-# Hugging Face Token
+# Hugging Face Token & Model
 # ------------------------------
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
+HF_MODEL_URL = "https://api-inference.huggingface.co/models/bigscience/bloom-560m"
 
 # ------------------------------
-# Function to get AI plan from Hugging Face
+# Function to get plan from HF
 # ------------------------------
-def get_ai_plan_from_hf(goal: str):
+def get_ai_plan(goal: str):
     if not HF_API_TOKEN:
+        # Fallback demo plan
         return f"[Demo Mode] Plan for '{goal}':\n- Morning: Learn basics\n- Afternoon: Practice\n- Evening: Reflect"
     
-    url = "https://api-inference.huggingface.co/models/gpt2"  # Example model, replace with your preferred one
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    payload = {
-        "inputs": f"Create a simple daily plan for the goal: {goal}",
-        "parameters": {"max_new_tokens": 150}
-    }
+    payload = {"inputs": f"Create a simple daily plan for the goal: {goal}", "parameters": {"max_new_tokens":150}}
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=20)
         response.raise_for_status()
         data = response.json()
-        # Hugging Face API response parsing
+        # Hugging Face API returns list of dicts with 'generated_text'
         text = data[0].get("generated_text", "")
         return text if text else "Sorry, no response from model."
     except Exception as e:
@@ -59,6 +48,6 @@ if st.button("Generate Plan"):
         st.warning("Please enter a goal first!")
     else:
         with st.spinner("Generating your plan..."):
-            plan = get_ai_plan_from_hf(goal)
+            plan = get_ai_plan(goal)
             st.success("✅ Here's your plan:")
             st.text_area("AI Plan", plan, height=300)
